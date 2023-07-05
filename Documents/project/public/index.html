@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>File Upload</title>
+    <style>
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>File Upload</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="fileInput" name="file" />
+        <button type="submit">Upload</button>
+    </form>
+    <div id="message"></div>
+
+    <script>
+        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const messageDiv = document.getElementById('message');
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showMessage('Please select a file.', true);
+                return;
+            }
+
+            if (file.size > 1024 * 1024) {
+                showMessage('File size exceeds the limit of 1MB.', true);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('127.0.0.1:27017/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const shortLink = data.shortLink;
+                    showMessage(`File uploaded successfully. Short link: ${shortLink}`);
+
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = shortLink;
+                    downloadLink.textContent = 'Download';
+                    downloadLink.download = file.name;
+
+                    messageDiv.appendChild(document.createElement('br'));
+                    messageDiv.appendChild(downloadLink);
+                } else {
+                    showMessage('An error occurred during file upload.', true);
+                }
+            } catch (error) {
+                console.error('An error occurred:', error);
+                showMessage('An error occurred during file upload.', true);
+            }
+        });
+
+        function showMessage(message, isError = false) {
+            messageDiv.textContent = message;
+            if (isError) {
+                messageDiv.classList.add('error');
+            } else {
+                messageDiv.classList.remove('error');
+            }
+        }
+    </script>
+</body>
+</html>
